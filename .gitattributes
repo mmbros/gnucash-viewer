@@ -1,1 +1,1 @@
-data-crypt/ filter=git-crypt diff=git-crypt
+data-crypt/* filter=git-crypt diff=git-crypt
