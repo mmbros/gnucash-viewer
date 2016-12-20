@@ -59,8 +59,21 @@ func main() {
 		if j >= 10 {
 			break
 		}
-		fmt.Printf("%3d) %s - splits=%d\n", j+1, t.Description, t.Splits.Len())
+		fmt.Printf("%3d) %s - %s - splits=%d\n",
+			j+1, t.DatePosted, t.Description, t.Splits.Len())
 	}
 	//book.Accounts.PrintTree("   ")
 
+	var precTime time.Time
+	for j, t := range book.Transactions {
+		currTime := time.Time(t.DatePosted)
+		if currTime.Before(precTime) {
+			fmt.Printf("Transactions(%d): currTime < precTime - %s < %s\n", j, currTime.UTC(), precTime.UTC())
+
+			fmt.Println(j-1, book.Transactions[j-1])
+			fmt.Println(j, t)
+			return
+		}
+		precTime = currTime
+	}
 }

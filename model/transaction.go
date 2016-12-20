@@ -2,6 +2,8 @@ package model
 
 import (
 	"encoding/xml"
+	"sort"
+	"time"
 
 	"github.com/mmbros/gnucash-viewer/types"
 )
@@ -37,7 +39,7 @@ type Transaction struct {
 	Splits      Splits         `xml:"splits>split"`
 }
 
-func TransactionUnmarshalXML(decoder *xml.Decoder, commodities Commodities, accMap AccountMap) (*Transaction, error) {
+func transactionUnmarshalXML(decoder *xml.Decoder, commodities Commodities, accMap AccountMap) (*Transaction, error) {
 
 	var trn Transaction
 	var cmdty Commodity
@@ -98,4 +100,18 @@ func (ts *Transactions) Add(t *Transaction) {
 // Len returns the number of transactions.
 func (ts Transactions) Len() int {
 	return len(ts)
+}
+
+// used to sort Transactions
+type byDatePosted Transactions
+
+func (t byDatePosted) Len() int      { return len(t) }
+func (t byDatePosted) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t byDatePosted) Less(i, j int) bool {
+	return time.Time(t[i].DatePosted).Before(time.Time(t[j].DatePosted))
+}
+
+// Sort sorts Transactions by DatePosted.
+func (ts Transactions) Sort() {
+	sort.Sort(byDatePosted(ts))
 }

@@ -93,7 +93,7 @@ func (b *Book) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 				decoder.DecodeElement(&cmdty, &se)
 				book.Commodities.Add(&cmdty)
 			case "account":
-				account, id, parentId, err := AccountUnmarshalXML(decoder, book.Commodities)
+				account, id, parentID, err := AccountUnmarshalXML(decoder, book.Commodities)
 				if err != nil {
 					return err
 				}
@@ -101,7 +101,7 @@ func (b *Book) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 				book.Accounts.Add(account)
 				// update map from id -> account
 				accMap[id] = account
-				if parentId == "" {
+				if parentID == "" {
 					// root account
 					if book.Accounts.Root != nil {
 						return errors.New("Invalid multi root accounts")
@@ -109,16 +109,16 @@ func (b *Book) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 					book.Accounts.Root = account
 				} else {
 					// setup parent and children values
-					parent, ok := accMap[parentId]
+					parent, ok := accMap[parentID]
 					if ok {
 						account.Parent = parent
 						parent.Children = append(parent.Children, account)
 					} else {
-						return fmt.Errorf("Parent account not (yes) found: parent=%s", parentId)
+						return fmt.Errorf("Parent account not (yes) found: parent=%s", parentID)
 					}
 				}
 			case "transaction":
-				trn, err := TransactionUnmarshalXML(decoder, book.Commodities, accMap)
+				trn, err := transactionUnmarshalXML(decoder, book.Commodities, accMap)
 				if err != nil {
 					return err
 				}
@@ -128,6 +128,7 @@ func (b *Book) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 
 		case xml.EndElement:
 			if se.Name.Local == "book" {
+				book.Transactions.Sort()
 				break
 			}
 		}
