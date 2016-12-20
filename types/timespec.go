@@ -13,6 +13,7 @@ TimeSpec = ( TimeStamp,
 TimeStamp = element ts:date { xsd:string { pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} (\+|-)[0-9]{4}" } }
 */
 
+// Timespec represent a gnucash Timespec value.
 type Timespec time.Time
 
 // UnmarshalXML implements xml.Unmarshaler interface
@@ -35,6 +36,9 @@ func (ts *Timespec) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
+// String returns the time formatted using the format string
+//	"2006-01-02 15:04:05.999999999 -0700 MST"
+// Return "" in case of zero Timespec.
 func (ts Timespec) String() string {
 	t := time.Time(ts)
 	if t.IsZero() {
