@@ -36,6 +36,7 @@ Account = element gnc:account {
 
 */
 
+// Accounts represents the Accounts tree.
 type Accounts struct {
 	Root *Account
 	//Map  map[types.GUID]*Account
@@ -221,4 +222,20 @@ func (accounts *Accounts) Add(acc *Account) {
 
 func (accounts *Accounts) Len() int {
 	return len(accounts.List)
+}
+
+func (a *Account) FullName() string {
+	// save names of ancestors
+	names := make([]string, 0, 10)
+	for a != nil {
+		names = append(names, a.Name)
+		a = a.Parent
+	}
+	// reverse names
+	// see: http://golangcookbook.com/chapters/arrays/reverse/
+	for i, j := 0, len(names)-1; i < j; i, j = i+1, j-1 {
+		names[i], names[j] = names[j], names[i]
+	}
+
+	return strings.Join(names, "/")
 }

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/mmbros/gnucash-viewer/model"
+	"github.com/mmbros/gnucash-viewer/query"
 )
 
 var gnucashPath = flag.String("gnucash-file", "data-crypt/mau.gnucash", "GnuCash file path")
@@ -62,8 +63,9 @@ func main() {
 		fmt.Printf("%3d) %s - %s - splits=%d\n",
 			j+1, t.DatePosted, t.Description, t.Splits.Len())
 	}
-	//book.Accounts.PrintTree("   ")
+	book.Accounts.PrintTree("   ")
 
+	// check Transactions is sorted by DatePosted
 	var precTime time.Time
 	for j, t := range book.Transactions {
 		currTime := time.Time(t.DatePosted)
@@ -75,5 +77,11 @@ func main() {
 			return
 		}
 		precTime = currTime
+	}
+
+	// find account by path
+	accounts, err := query.FindAccounts(".//Benzina", book.Accounts.Root)
+	for j, a := range accounts {
+		fmt.Printf("%d) %s\n", j+1, a.FullName())
 	}
 }
