@@ -20,6 +20,25 @@ import (
 
 var gnucashPath = flag.String("gnucash-file", "data-crypt/mau.gnucash", "GnuCash file path")
 
+func testQuery(b *model.Book) {
+
+	loc, _ := time.LoadLocation("Local")
+	afterEq := time.Date(2016, 1, 2, 0, 0, 0, 0, loc)
+	before := afterEq.Add(24 * time.Hour)
+
+	filters := query.NewFilters()
+	filters.DatePostedRange(afterEq, before)
+
+	fmt.Println(filters.String())
+
+	results := query.Where(b, filters)
+	fmt.Printf("results LEN = %+v\n", len(results))
+	for j, r := range results {
+		fmt.Printf("%02d) %+v\n", j+1, r.T)
+	}
+
+}
+
 func main() {
 	defer timeTrack(time.Now(), "task duration:")
 
@@ -84,4 +103,7 @@ func main() {
 	for j, a := range accounts {
 		fmt.Printf("%d) %s\n", j+1, a.FullName())
 	}
+
+	testQuery(book)
+
 }

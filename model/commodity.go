@@ -41,7 +41,7 @@ type Commodity struct {
 }
 
 func (c *Commodity) String() string {
-	return c.ID
+	return c.Space + ":" + c.ID
 }
 
 func CommodityUnmarshalXML(decoder *xml.Decoder, start xml.StartElement) (*Commodity, error) {

@@ -46,3 +46,26 @@ func (ts Timespec) String() string {
 	}
 	return t.String()
 }
+
+/*
+
+// Equal reports whether t and u represent the same time instant.
+// Two times can be equal even if they are in different locations.
+// For example, 6:00 +0200 CEST and 4:00 UTC are Equal.
+// This comparison is different from using t == u, which also compares
+// the locations.
+func (ts Timespec) Equal(u time.Time) bool {
+	return time.Time(ts).Equal(u)
+}
+
+// After reports whether the time instant t is after u.
+func (ts Timespec) After(u time.Time) bool {
+	return time.Time(ts).After(u)
+}
+
+// Before reports whether the time instant t is before u.
+func (ts Timespec) Before(u time.Time) bool {
+	return time.Time(ts).Before(u)
+}
+
+*/
