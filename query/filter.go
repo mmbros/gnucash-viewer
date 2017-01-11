@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/mmbros/gnucash-viewer/model"
+	"github.com/mmbros/gnucash-viewer/types"
 )
 
 /*
@@ -81,7 +82,7 @@ func (f *Filters) String() string {
 // ============================================================================
 // TRANSACTION FILTERS
 
-func (f *Filters) DatePostedRange(afterEqual, before time.Time) {
+func (f *Filters) DatePostedRange(afterEqual, before time.Time) *Filters {
 
 	fn := func(tr *model.Transaction) bool {
 		datePosted := time.Time(tr.DatePosted)
@@ -92,28 +93,44 @@ func (f *Filters) DatePostedRange(afterEqual, before time.Time) {
 	}
 
 	f.transactionFilters = append(f.transactionFilters, fn)
+	return f
 }
 
-func (f *Filters) DatePostedAfterEqual(afterEqual time.Time) {
+func (f *Filters) DatePostedAfterEqual(afterEqual time.Time) *Filters {
 
 	fn := func(tr *model.Transaction) bool {
 		return !time.Time(tr.DatePosted).Before(afterEqual)
 	}
 
 	f.transactionFilters = append(f.transactionFilters, fn)
+	return f
 }
 
-func (f *Filters) Currency(currency *model.Commodity) {
+func (f *Filters) Currency(currency *model.Commodity) *Filters {
 
 	fn := func(t *model.Transaction) bool {
 		return t.Currency == currency
 	}
 
 	f.transactionFilters = append(f.transactionFilters, fn)
+	return f
 }
 
 // ============================================================================
 // SPLIT FILTERS
+
+// ============================================================================
+// ACCOUNT FILTERS
+
+func (f *Filters) AccountType(at types.AccountType) *Filters {
+
+	fn := func(a *model.Account) bool {
+		return a.Type == at
+	}
+
+	f.accountFilters = append(f.accountFilters, fn)
+	return f
+}
 
 // ============================================================================
 func Where(b *model.Book, f *Filters) []*Result {

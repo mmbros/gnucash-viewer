@@ -16,6 +16,7 @@ import (
 
 	"github.com/mmbros/gnucash-viewer/model"
 	"github.com/mmbros/gnucash-viewer/query"
+	"github.com/mmbros/gnucash-viewer/types"
 )
 
 var gnucashPath = flag.String("gnucash-file", "data-crypt/mau.gnucash", "GnuCash file path")
@@ -23,11 +24,12 @@ var gnucashPath = flag.String("gnucash-file", "data-crypt/mau.gnucash", "GnuCash
 func testQuery(b *model.Book) {
 
 	loc, _ := time.LoadLocation("Local")
-	afterEq := time.Date(2016, 1, 2, 0, 0, 0, 0, loc)
-	before := afterEq.Add(24 * time.Hour)
 
-	filters := query.NewFilters()
-	filters.DatePostedRange(afterEq, before)
+	afterEq := time.Date(2016, 2, 1, 0, 0, 0, 0, loc)
+	before := time.Date(2016, 3, 1, 0, 0, 0, 0, loc)
+	//before := afterEq.Add(24 * time.Hour)
+
+	filters := query.NewFilters().DatePostedRange(afterEq, before).AccountType(types.AccountTypeExpense)
 
 	fmt.Println(filters.String())
 
