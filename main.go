@@ -16,7 +16,6 @@ import (
 
 	"github.com/mmbros/gnucash-viewer/model"
 	"github.com/mmbros/gnucash-viewer/query"
-	"github.com/mmbros/gnucash-viewer/types"
 )
 
 var gnucashPath = flag.String("gnucash-file", "data-crypt/mau.gnucash", "GnuCash file path")
@@ -25,18 +24,25 @@ func testQuery(b *model.Book) {
 
 	loc, _ := time.LoadLocation("Local")
 
-	afterEq := time.Date(2016, 2, 1, 0, 0, 0, 0, loc)
-	before := time.Date(2016, 3, 1, 0, 0, 0, 0, loc)
+	afterEq := time.Date(2016, 1, 1, 0, 0, 0, 0, loc)
+	before := time.Date(2017, 1, 1, 0, 0, 0, 0, loc)
 	//before := afterEq.Add(24 * time.Hour)
 
-	filters := query.NewFilters().DatePostedRange(afterEq, before).AccountType(types.AccountTypeExpense)
+	results := query.Query(b).
+		DatePostedRange(afterEq, before).
+		//AccountType(types.AccountTypeExpense).
+		AccountPath(".//Benzina").
+		Execute()
 
-	fmt.Println(filters.String())
-
-	results := query.Where(b, filters)
 	fmt.Printf("results LEN = %+v\n", len(results))
 	for j, r := range results {
-		fmt.Printf("%02d) %+v\n", j+1, r.T)
+		fmt.Printf("%02d) %s  %0.2f EUR  %s\n",
+			j+1,
+			r.T.DatePosted.YMD(),
+			r.S.Value.Float64(),
+			r.T.Description,
+		)
+
 	}
 
 }
@@ -84,7 +90,7 @@ func main() {
 		fmt.Printf("%3d) %s - %s - splits=%d\n",
 			j+1, t.DatePosted, t.Description, t.Splits.Len())
 	}
-	book.Accounts.PrintTree("   ")
+	//book.Accounts.PrintTree("   ")
 
 	// check Transactions is sorted by DatePosted
 	var precTime time.Time
@@ -101,10 +107,10 @@ func main() {
 	}
 
 	// find account by path
-	accounts, err := query.FindAccounts(".//Benzina", book.Accounts.Root)
-	for j, a := range accounts {
-		fmt.Printf("%d) %s\n", j+1, a.FullName())
-	}
+	//accounts, err := query.FindAccounts(".//Benzina", book.Accounts.Root)
+	//for j, a := range accounts {
+	//fmt.Printf("%d) %s\n", j+1, a.FullName())
+	//}
 
 	testQuery(book)
 

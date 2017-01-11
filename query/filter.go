@@ -57,32 +57,28 @@ type (
 	AccountFilter     func(*model.Account) bool
 )
 
-type Filters struct {
+type query struct {
+	book               *model.Book
 	transactionFilters []TransactionFilter
 	splitFilters       []SplitFilter
 	accountFilters     []AccountFilter
 }
 
-func NewFilters() *Filters {
-	f := Filters{
+func Query(b *model.Book) *query {
+	q := &query{
+		b,
+
 		[]TransactionFilter{},
 		[]SplitFilter{},
 		[]AccountFilter{},
 	}
-	return &f
-}
-
-func (f *Filters) String() string {
-	return fmt.Sprintf("Filters{Transaction:%d, Split:%d, Account:%d}",
-		len(f.transactionFilters),
-		len(f.splitFilters),
-		len(f.accountFilters))
+	return q
 }
 
 // ============================================================================
 // TRANSACTION FILTERS
 
-func (f *Filters) DatePostedRange(afterEqual, before time.Time) *Filters {
+func (q *query) DatePostedRange(afterEqual, before time.Time) *query {
 
 	fn := func(tr *model.Transaction) bool {
 		datePosted := time.Time(tr.DatePosted)
@@ -92,28 +88,28 @@ func (f *Filters) DatePostedRange(afterEqual, before time.Time) *Filters {
 		return datePosted.Before(before)
 	}
 
-	f.transactionFilters = append(f.transactionFilters, fn)
-	return f
+	q.transactionFilters = append(q.transactionFilters, fn)
+	return q
 }
 
-func (f *Filters) DatePostedAfterEqual(afterEqual time.Time) *Filters {
+func (q *query) DatePostedAfterEqual(afterEqual time.Time) *query {
 
 	fn := func(tr *model.Transaction) bool {
 		return !time.Time(tr.DatePosted).Before(afterEqual)
 	}
 
-	f.transactionFilters = append(f.transactionFilters, fn)
-	return f
+	q.transactionFilters = append(q.transactionFilters, fn)
+	return q
 }
 
-func (f *Filters) Currency(currency *model.Commodity) *Filters {
+func (q *query) Currency(currency *model.Commodity) *query {
 
 	fn := func(t *model.Transaction) bool {
 		return t.Currency == currency
 	}
 
-	f.transactionFilters = append(f.transactionFilters, fn)
-	return f
+	q.transactionFilters = append(q.transactionFilters, fn)
+	return q
 }
 
 // ============================================================================
@@ -122,25 +118,45 @@ func (f *Filters) Currency(currency *model.Commodity) *Filters {
 // ============================================================================
 // ACCOUNT FILTERS
 
-func (f *Filters) AccountType(at types.AccountType) *Filters {
+func (q *query) AccountType(at types.AccountType) *query {
 
 	fn := func(a *model.Account) bool {
 		return a.Type == at
 	}
 
-	f.accountFilters = append(f.accountFilters, fn)
-	return f
+	q.accountFilters = append(q.accountFilters, fn)
+	return q
+}
+
+func (q *query) AccountPath(path string) *query {
+
+	accounts, err := FindAccounts(path, q.book.Accounts.Root)
+	if err != nil {
+		msg := fmt.Sprintf("query.AccountPath(%s): %v", path, err.Error())
+		panic(msg)
+	}
+	fn := func(a *model.Account) bool {
+		for _, acc := range accounts {
+			if a == acc {
+				return true
+			}
+		}
+		return false
+	}
+
+	q.accountFilters = append(q.accountFilters, fn)
+	return q
 }
 
 // ============================================================================
-func Where(b *model.Book, f *Filters) []*Result {
+func (q *query) Execute() []*Result {
 	res := []*Result{}
 
 LOOP_TRANSACTION:
-	for _, t := range b.Transactions {
+	for _, t := range q.book.Transactions {
 
 		// Check fo transaction filters.
-		for _, transactionFilter := range f.transactionFilters {
+		for _, transactionFilter := range q.transactionFilters {
 			if !transactionFilter(t) {
 				// next Transaction
 				continue LOOP_TRANSACTION
@@ -152,7 +168,7 @@ LOOP_TRANSACTION:
 		for _, s := range t.Splits {
 
 			// Check for split filters.
-			for _, splitFilter := range f.splitFilters {
+			for _, splitFilter := range q.splitFilters {
 				if !splitFilter(s) {
 					// next Split
 					continue LOOP_SPLIT
@@ -161,7 +177,7 @@ LOOP_TRANSACTION:
 			}
 
 			// Check for account filters.
-			for _, accountFilter := range f.accountFilters {
+			for _, accountFilter := range q.accountFilters {
 				if !accountFilter(s.Account) {
 					// next Split
 					continue LOOP_SPLIT

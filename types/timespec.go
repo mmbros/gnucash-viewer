@@ -47,6 +47,11 @@ func (ts Timespec) String() string {
 	return t.String()
 }
 
+func (ts Timespec) YMD() string {
+	return time.Time(ts).Format("2006-01-02")
+
+}
+
 /*
 
 // Equal reports whether t and u represent the same time instant.
