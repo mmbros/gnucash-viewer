@@ -151,6 +151,7 @@ func (q *query) AccountPath(path string) *query {
 // ============================================================================
 func (q *query) Execute() []*Result {
 	res := []*Result{}
+	onlyTransactions := (len(q.splitFilters) == 0) && (len(q.accountFilters) == 0)
 
 LOOP_TRANSACTION:
 	for _, t := range q.book.Transactions {
@@ -164,6 +165,12 @@ LOOP_TRANSACTION:
 		}
 		// The current Transaction passed the transaction filters.
 
+		if onlyTransactions {
+			// Success
+			res = append(res, &Result{t, nil})
+			continue LOOP_TRANSACTION
+		}
+
 	LOOP_SPLIT:
 		for _, s := range t.Splits {
 
@@ -173,7 +180,6 @@ LOOP_TRANSACTION:
 					// next Split
 					continue LOOP_SPLIT
 				}
-
 			}
 
 			// Check for account filters.
@@ -182,14 +188,12 @@ LOOP_TRANSACTION:
 					// next Split
 					continue LOOP_SPLIT
 				}
-
 			}
 
 			// Success
 			res = append(res, &Result{t, s})
 
 		} // LOOP_SPLIT
-
 	} // LOOP_TRANSACTION
 	return res
 }

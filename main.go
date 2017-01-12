@@ -16,9 +16,70 @@ import (
 
 	"github.com/mmbros/gnucash-viewer/model"
 	"github.com/mmbros/gnucash-viewer/query"
+	"github.com/mmbros/gnucash-viewer/types"
 )
 
 var gnucashPath = flag.String("gnucash-file", "data-crypt/mau.gnucash", "GnuCash file path")
+
+func InfoTransaction(t *model.Transaction) {
+
+	if t.Splits.Len() > 2 {
+		fmt.Printf("*** SPLITS = %d *** \n", t.Splits.Len())
+		return
+	}
+	sPos, sNeg := t.Splits[0], t.Splits[1]
+	if sPos.Value.Sign() < 0 {
+		sPos, sNeg = sNeg, sPos
+	}
+
+	atPos := sPos.Account.BasicType()
+	atNeg := sNeg.Account.BasicType()
+
+	// Asset  -> Expense : uscite
+	// Income -> Asset   : entrate
+	// Asset  -> Asset   : trasferimenti
+	// else              : boh
+
+	descr := "OTHER"
+	switch atNeg {
+	case types.AccountTypeAsset:
+		switch atPos {
+		case types.AccountTypeExpense:
+			descr = "USCITE"
+		case types.AccountTypeAsset:
+			descr = "MOVIMENTO"
+		}
+	case types.AccountTypeIncome:
+		if atPos == types.AccountTypeAsset {
+			descr = "ENTRATE"
+		}
+	}
+
+	fmt.Printf("  %0.2f %s : %s --> %s\n",
+		sPos.Value.Float64(),
+		descr,
+		atNeg,
+		atPos,
+	)
+}
+
+func PrintTransaction(idx int, t *model.Transaction) {
+
+	fmt.Printf("%02d) %s %s\n",
+		idx,
+		t.DatePosted.YMD(),
+		t.Description,
+	)
+	for k, s := range t.Splits {
+		fmt.Printf("  [%d] %0.2f  %s [%s]\n",
+			k,
+			s.Value.Float64(),
+			s.Account.Name,
+			s.Account.Type,
+		)
+	}
+	InfoTransaction(t)
+}
 
 func testQuery(b *model.Book) {
 
@@ -45,6 +106,55 @@ func testQuery(b *model.Book) {
 
 	}
 
+	afterEq = time.Date(2016, 8, 1, 0, 0, 0, 0, loc)
+	before = time.Date(2016, 9, 1, 0, 0, 0, 0, loc)
+	results = query.Query(b).
+		DatePostedRange(afterEq, before).
+		Execute()
+
+	fmt.Printf("results LEN = %+v\n", len(results))
+	for j, r := range results {
+
+		/*
+			var descr string
+
+			if len(r.T.Splits) == 2 {
+				// simple transaction
+				s0, s1 := r.T.Splits[0], r.T.Splits[1]
+
+				// Entrate:
+				//   Entrate -> Attivita
+				// Uscite:
+				//   Attivita -> Uscite
+				//   Passivita -> Uscite
+				// Rimborsi:
+				//   Uscite -> Entrate
+				//   Uscite -> Passivita
+				// Altro:
+				//   Attivita -> Passivita
+
+				descr = fmt.Sprintf("%s {%s} <--> %s {%s}", s0.Account.Name, s0.Account.Type.String(), s1.Account.Name, s1.Account.Type.String())
+
+			} else {
+				descr = fmt.Sprintf("*** %d splits ***", len(r.T.Splits))
+			}
+		*/
+
+		fmt.Printf("%02d) %s %s\n",
+			j+1,
+			r.T.DatePosted.YMD(),
+			r.T.Description,
+		)
+		for k, s := range r.T.Splits {
+			fmt.Printf("  [%d] %0.2f  %s [%s]\n",
+				k,
+				s.Value.Float64(),
+				s.Account.Name,
+				s.Account.Type,
+			)
+		}
+
+	}
 }
 
 func main() {
@@ -90,7 +200,7 @@ func main() {
 		fmt.Printf("%3d) %s - %s - splits=%d\n",
 			j+1, t.DatePosted, t.Description, t.Splits.Len())
 	}
-	//book.Accounts.PrintTree("   ")
+	book.Accounts.PrintTree("   ")
 
 	// check Transactions is sorted by DatePosted
 	var precTime time.Time
@@ -112,6 +222,18 @@ func main() {
 	//fmt.Printf("%d) %s\n", j+1, a.FullName())
 	//}
 
-	testQuery(book)
+	//testQuery(book)
 
+	found := 0
+
+	for _, t := range book.Transactions {
+		if t.Splits.Len() > 1 {
+			found++
+			PrintTransaction(found, t)
+
+			if found >= 30 {
+				break
+			}
+		}
+	}
 }

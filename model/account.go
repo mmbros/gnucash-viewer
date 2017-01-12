@@ -239,3 +239,22 @@ func (a *Account) FullName() string {
 
 	return strings.Join(names, "/")
 }
+
+// BasicType returns the account type of the ancestor tha is a child of the root account.
+// returns None in case of nil account.
+// returns Root in case of root account.
+func (a *Account) BasicType() types.AccountType {
+	if a == nil {
+		return types.AccountTypeNone
+	}
+	p := a.Parent
+	if p == nil {
+		return a.Type // Root
+	}
+	for {
+		if p.Parent == nil {
+			return a.Type
+		}
+		p, a = p.Parent, p
+	}
+}
