@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"strings"
@@ -58,7 +59,7 @@ type Account struct {
 	Children []*Account
 }
 
-// AccountMap
+// AccountMap type represents a mapping from a string key to an account item.
 type AccountMap map[string]*Account
 
 func AccountUnmarshalXML(decoder *xml.Decoder, commodities Commodities) (a *Account, ID string, ParentID string, err error) {
@@ -216,28 +217,51 @@ func (accounts *Accounts) PrintTree(indent string) {
 
 }
 
+// Add append an account to the list of accounts.
+// It doesn't check if the account is already present in the list.
 func (accounts *Accounts) Add(acc *Account) {
 	accounts.List = append(accounts.List, acc)
 }
 
+// Len returns the number of the accounts.
 func (accounts *Accounts) Len() int {
 	return len(accounts.List)
 }
 
-func (a *Account) FullName() string {
-	// save names of ancestors
-	names := make([]string, 0, 10)
+// ancestors returns the list of the ancestors of the given account.
+// The first item of the list is the given account itself.
+// The last item of the list is the root account.
+//    -> {account, parent, grandparent, ..., root}
+func (a *Account) ancestors() []*Account {
+	accounts := []*Account{}
 	for a != nil {
-		names = append(names, a.Name)
+		accounts = append(accounts, a)
 		a = a.Parent
 	}
-	// reverse names
-	// see: http://golangcookbook.com/chapters/arrays/reverse/
-	for i, j := 0, len(names)-1; i < j; i, j = i+1, j-1 {
-		names[i], names[j] = names[j], names[i]
+	return accounts
+}
+
+func (a *Account) getFullName(sep string) string {
+	if a == nil {
+		return "<nil>"
+	}
+	if a.Parent == nil {
+		return "<root>"
 	}
 
-	return strings.Join(names, "/")
+	accounts := a.ancestors()
+	buf := new(bytes.Buffer)
+	for j := len(accounts) - 2; j >= 0; j-- {
+		buf.WriteString(accounts[j].Name)
+		if j > 0 {
+			buf.WriteString(sep)
+		}
+	}
+	return buf.String()
+}
+
+func (a *Account) FullName() string {
+	return a.getFullName(" > ")
 }
 
 // BasicType returns the account type of the ancestor tha is a child of the root account.

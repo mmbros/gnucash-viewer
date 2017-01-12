@@ -61,6 +61,7 @@ func InfoTransaction(t *model.Transaction) {
 		atNeg,
 		atPos,
 	)
+	fmt.Println(sPos.Account.FullName())
 }
 
 func PrintTransaction(idx int, t *model.Transaction) {
